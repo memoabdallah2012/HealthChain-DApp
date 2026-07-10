@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthChain dApp</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-soft: #eff6ff;
+            --secondary-color: #64748b;
+            --success-color: #16a34a;
+            --success-soft: #dcfce7;
+            --danger-color: #dc2626;
+            --danger-dark: #b91c1c;
+            --danger-soft: #fee2e2;
+            --warning-color: #f59e0b;
+            --light-color: #f8fafc;
+            --dark-color: #0f172a;
+            --muted-color: #475569;
+            --line-color: #e2e8f0;
+            --card-color: #ffffff;
+            --font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            --border-radius: 16px;
+            --border-radius-sm: 10px;
+            --box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+            --box-shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background:
+                radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 32rem),
+                linear-gradient(135deg, #f8fafc 0%, #eef4ff 45%, #f8fafc 100%);
+            margin: 0;
+            min-height: 100vh;
+            color: var(--dark-color);
+        }
+
+        .app-shell {
+            width: min(1180px, calc(100% - 32px));
+            margin: 24px auto;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 28px;
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+        }
+
+        .app-header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 18px;
+            align-items: center;
+            padding: 28px;
+            background:
+                linear-gradient(135deg, rgba(37, 99, 235, 0.95), rgba(14, 165, 233, 0.88)),
+                linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0));
+            color: white;
+        }
+
+        .brand {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .brand-logo-card {
+            width: clamp(155px, 20vw, 230px);
+            min-width: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+
+        .brand-logo {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+            background: transparent;
+            filter: drop-shadow(0 8px 14px rgba(15, 23, 42, 0.18));
+        }
+
+        .brand-text {
+            min-width: 0;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .brand h1 {
+            margin: 0;
+            color: white;
+            text-align: left;
+            font-size: clamp(1.65rem, 3vw, 2.35rem);
+            letter-spacing: -0.03em;
+        }
+
+        .brand p {
+            margin: 6px 0 0;
+            color: rgba(255, 255, 255, 0.88);
+            line-height: 1.5;
+        }
+
+        .user-panel {
+            min-width: min(340px, 100%);
+            padding: 16px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+        }
+
+        .user-info {
+            text-align: left;
+            margin: 0 0 12px;
+            padding: 0;
+            background: transparent;
+            border-radius: 0;
+            color: white;
+            word-break: break-word;
+            line-height: 1.5;
+        }
+
+        .content-area {
+            padding: 28px;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.25s ease-in-out;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-title {
+            margin-bottom: 18px;
+        }
+
+        h1, h2, h3, h4, h5 {
+            color: var(--dark-color);
+            line-height: 1.25;
+        }
+
+        h2 {
+            margin: 0 0 6px;
+            font-size: clamp(1.45rem, 2.8vw, 2rem);
+            letter-spacing: -0.025em;
+        }
+
+        h3 {
+            margin: 0 0 14px;
+            font-size: 1.15rem;
+        }
+
+        h4 {
+            margin: 18px 0 10px;
+            color: var(--muted-color);
+        }
+
+        h5 {
+            margin: 16px 0 8px;
+            color: var(--muted-color);
+        }
+
+        p {
+            color: var(--muted-color);
+            line-height: 1.55;
+        }
+
+        .subtitle {
+            margin: 0;
+            color: var(--muted-color);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 18px;
+        }
+
+        .dashboard-card,
+        .plan-card {
+            background: var(--card-color);
+            border: 1px solid var(--line-color);
+            border-radius: var(--border-radius);
+            padding: 22px;
+            box-shadow: var(--box-shadow-sm);
+        }
+
+        .dashboard-card {
+            grid-column: span 6;
+        }
+
+        .dashboard-card.full {
+            grid-column: 1 / -1;
+        }
+
+        .plan-card {
+            margin-bottom: 16px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .plan-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--box-shadow);
+            border-color: #bfdbfe;
+        }
+
+        .plan-card h4 {
+            margin-top: 0;
+            color: var(--primary-dark);
+            font-size: 1.1rem;
+        }
+
+        .login-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-card {
+            background: var(--card-color);
+            border: 1px solid var(--line-color);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            box-shadow: var(--box-shadow-sm);
+        }
+
+        .form-card.accent {
+            background: linear-gradient(180deg, #ffffff, #f8fbff);
+            border-color: #cfe2ff;
+        }
+
+        .field-group {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--dark-color);
+            font-weight: 650;
+            font-size: 0.94rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 13px 14px;
+            margin: 0;
+            border-radius: var(--border-radius-sm);
+            border: 1px solid #cbd5e1;
+            box-sizing: border-box;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        button {
+            width: min(60%, 260px);
+            padding: 9px 14px;
+            margin: 0;
+            border-radius: var(--border-radius-sm);
+            border: 1px solid #cbd5e1;
+            box-sizing: border-box;
+            font-size: 0.94rem;
+            font-family: inherit;
+        }
+
+        input, select {
+            background: #ffffff;
+            color: var(--dark-color);
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+        }
+
+        input::placeholder {
+            color: #94a3b8;
+        }
+
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 38px;
+            background: linear-gradient(135deg, var(--primary-color), #0ea5e9);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18);
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            filter: brightness(0.98);
+            box-shadow: 0 14px 28px rgba(37, 99, 235, 0.22);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            background: #cbd5e1;
+            color: #64748b;
+            box-shadow: none;
+            transform: none;
+        }
+
+        #logoutButton {
+            display: none;
+            width: auto;
+            min-width: 130px;
+            background: rgba(220, 38, 38, 0.94);
+            box-shadow: none;
+        }
+
+        #logoutButton:hover {
+            background: var(--danger-dark);
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid var(--line-color);
+            margin: 22px 0;
+        }
+
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 18px 0 0;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: var(--primary-soft);
+            color: var(--primary-dark);
+            border: 1px solid #dbeafe;
+            font-size: 0.9rem;
+            font-weight: 650;
+        }
+
+        .dashboard-note {
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            color: var(--muted-color);
+            padding: 14px 16px;
+            border-radius: var(--border-radius-sm);
+            margin-bottom: 18px;
+        }
+
+        .balance-bar {
+            background-color: #e2e8f0;
+            border-radius: 999px;
+            overflow: hidden;
+            height: 26px;
+            margin-top: 10px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .balance-fill {
+            background: linear-gradient(90deg, var(--success-color), #22c55e);
+            height: 100%;
+            min-width: 42px;
+            text-align: center;
+            color: white;
+            line-height: 24px;
+            font-size: 0.86rem;
+            font-weight: 800;
+            transition: width 0.5s ease-in-out;
+        }
+
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 10px;
+            margin: 10px 0 18px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            min-height: 46px;
+            background: #f8fafc;
+            padding: 10px 12px;
+            border: 1px solid var(--line-color);
+            border-radius: var(--border-radius-sm);
+            transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+        }
+
+        .checkbox-item:hover {
+            background: var(--primary-soft);
+            border-color: #bfdbfe;
+            transform: translateY(-1px);
+        }
+
+        .checkbox-item input {
+            width: auto;
+            margin: 0 10px 0 0;
+            accent-color: var(--primary-color);
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            font-weight: 600;
+            color: var(--muted-color);
+            cursor: pointer;
+        }
+
+        ul {
+            margin-top: 8px;
+            color: var(--muted-color);
+        }
+
+        li {
+            margin: 5px 0;
+        }
+
+        #myPlanSection,
+        #allPlansList,
+        #companyPlansList {
+            margin-top: 12px;
+        }
+
+        #notification {
+            position: fixed;
+            left: 50%;
+            right: auto;
+            bottom: 22px;
+            transform: translate(-50%, 16px);
+            width: max-content;
+            min-width: min(340px, calc(100% - 44px));
+            max-width: min(560px, calc(100% - 44px));
+            padding: 15px 18px;
+            border-radius: 14px;
+            color: white;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0.25s ease, transform 0.25s ease;
+            z-index: 1000;
+            box-shadow: 0 18px 35px rgba(15, 23, 42, 0.2);
+            font-weight: 650;
+            line-height: 1.45;
+            text-align: center;
+        }
+
+        #notification.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, 0);
+        }
+
+        #notification.success {
+            background: linear-gradient(135deg, var(--success-color), #22c55e);
+        }
+
+        #notification.error {
+            background: linear-gradient(135deg, var(--danger-color), #ef4444);
+        }
+
+        .footer-note {
+            margin: 20px 0 0;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 860px) {
+            .app-header,
+            .login-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-card {
+                grid-column: 1 / -1;
+            }
+
+            .user-panel {
+                min-width: 100%;
+            }
+
+            .brand {
+                align-items: flex-start;
+                flex-wrap: wrap;
+            }
+
+            .brand-logo-card {
+                width: min(215px, 70vw);
+            }
+        }
+
+        @media (max-width: 560px) {
+            .app-shell {
+                width: min(100% - 18px, 1180px);
+                margin: 9px auto;
+            }
+
+            .content-area,
+            .app-header {
+                padding: 18px;
+            }
+
+            .brand {
+                align-items: flex-start;
+            }
+
+            .brand-logo-card {
+                width: min(200px, 75vw);
+                min-width: 0;
+                max-width: 220px;
+            }
+
+            button {
+                width: 100%;
+                max-width: none;
+            }
+
+            .form-card,
+            .dashboard-card,
+            .plan-card {
+                padding: 18px;
+            }
+
+            .checkbox-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="app-shell">
+        <div class="container">
+            <header class="app-header">
+                <div class="brand">
+                    <div class="brand-logo-card">
+                        <img src="healthchain_logo_transparent.png" alt="HealthChain logo" class="brand-logo">
+                    </div>
+                    <div class="brand-text">
+                        <h1 class="visually-hidden">HealthChain dApp</h1>
+                        <p>Blockchain-based health insurance claim management prototype</p>
+                        <div class="badge-row">
+                            <span class="badge">Smart Contract</span>
+                            <span class="badge">Role-Based Access</span>
+                            <span class="badge">On-Chain Verification</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="user-panel">
+                    <div id="currentUser" class="user-info">Not Logged In</div>
+                    <button id="logoutButton" style="display:none;">Logout</button>
+                </div>
+            </header>
+
+            <section class="content-area">
+                <div id="loginPage" class="page active">
+                    <div class="section-title">
+                        <h2>Login or Register</h2>
+                        <p class="subtitle">Connect MetaMask on Sepolia Testnet to access the public blockchain testing environment.</p>
+                    </div>
+
+                    <div class="login-layout">
+                        <div class="form-card accent">
+                            <h3>Existing User Login</h3>
+                            <p>Connect the MetaMask wallet that is already registered in the HealthChain smart contract.</p>
+
+                            <button id="loginButton">Connect MetaMask / Login</button>
+                        </div>
+
+                        <div class="form-card">
+                            <h3>First Time Registration</h3>
+                            <p>Connect MetaMask, then register the connected wallet as a Patient, Hospital, Clinic, Pharmacy, or Insurance Company.</p>
+
+                            <div class="field-group">
+                                <label for="registerName">Actor Name</label>
+                                <input type="text" id="registerName" placeholder="Your full name, hospital, clinic, pharmacy, or company name">
+                            </div>
+
+                            <div class="field-group">
+                                <label for="registerRole">Actor Role</label>
+                                <select id="registerRole">
+                                    <option value="1">Patient</option>
+                                    <option value="2">Hospital</option>
+                                    <option value="3">Clinic</option>
+                                    <option value="4">Pharmacy</option>
+                                    <option value="5">Insurance Company</option>
+                                </select>
+                            </div>
+
+                            <button id="registerButton">Register</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="patientDashboard" class="page">
+                    <div class="section-title">
+                        <h2>Patient Dashboard</h2>
+                        <p class="subtitle">View your current plan, remaining balance, and available insurance plans.</p>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card full">
+                            <h3>My Current Plan</h3>
+                            <div id="myPlanSection"></div>
+                        </div>
+
+                        <div class="dashboard-card full">
+                            <h3>Available Insurance Plans</h3>
+                            <div id="allPlansList"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="insuranceDashboard" class="page">
+                    <div class="section-title">
+                        <h2>Insurance Company Dashboard</h2>
+                        <p class="subtitle">Create insurance plans, add platform items, and manage provider exclusions.</p>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card">
+                            <h3>Add a New Medical Service</h3>
+                            <p>Add services or medicines to the platform master list before creating plans.</p>
+
+                            <div class="field-group">
+                                <label for="newServiceName">Service Name</label>
+                                <input type="text" id="newServiceName" placeholder="Service Name (e.g., MRI Scan)">
+                            </div>
+
+                            <div class="field-group">
+                                <label for="newServiceCost">Service Cost</label>
+                                <input type="number" id="newServiceCost" placeholder="Service Cost (e.g., 800)">
+                            </div>
+
+                            <button id="addServiceButton">Add Service</button>
+                        </div>
+
+                        <div class="dashboard-card">
+                            <h3>Existing Plans</h3>
+                            <p>Display insurance plans created by the currently logged-in company.</p>
+                            <button id="listMyPlansButton">Show My Existing Plans</button>
+                        </div>
+
+                        <div class="dashboard-card full">
+                            <h3>Create a New Insurance Plan</h3>
+                            <p class="dashboard-note">Select covered services and optionally exclude specific healthcare providers from this plan.</p>
+
+                            <div class="field-group">
+                                <label for="planName">Plan Name</label>
+                                <input type="text" id="planName" placeholder="Plan Name (e.g., Gold Plan)">
+                            </div>
+
+                            <div class="field-group">
+                                <label for="coverageLimit">Coverage Limit</label>
+                                <input type="number" id="coverageLimit" placeholder="Coverage Limit (e.g., 5000)">
+                            </div>
+
+                            <h4>Select Services to Cover</h4>
+                            <div id="servicesCheckboxes" class="checkbox-grid"></div>
+
+                            <h4>Exclude Specific Providers (Optional)</h4>
+                            <div id="providerExclusionList" class="checkbox-grid"></div>
+
+                            <button id="createPlanButton">Create Plan</button>
+                        </div>
+
+                        <div class="dashboard-card full">
+                            <div id="companyPlansList"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="providerDashboard" class="page">
+                    <div class="section-title">
+                        <h2>Service Provider Dashboard</h2>
+                        <p class="subtitle">Process healthcare services or medicines for enrolled patients.</p>
+                    </div>
+
+                    <div class="dashboard-card full">
+                        <div class="field-group">
+                            <label for="patientAddress">Patient Ethereum Address</label>
+                            <input type="text" id="patientAddress" placeholder="Enter patient's Ethereum address">
+                        </div>
+                    </div>
+
+                    <div id="hospitalClinicSection">
+                        <div class="dashboard-grid">
+                            <div class="dashboard-card">
+                                <h3>Add a New Service</h3>
+                                <p>Add a new healthcare service to the platform master list.</p>
+
+                                <div class="field-group">
+                                    <label for="newHospitalServiceName">Service Name</label>
+                                    <input type="text" id="newHospitalServiceName" placeholder="Service Name (e.g., MRI Scan)">
+                                </div>
+
+                                <div class="field-group">
+                                    <label for="newHospitalServiceCost">Service Cost</label>
+                                    <input type="number" id="newHospitalServiceCost" placeholder="Service Cost (e.g., 800)">
+                                </div>
+
+                                <button id="addHospitalServiceButton">Add Service</button>
+                            </div>
+
+                            <div class="dashboard-card">
+                                <h3>Provide Services to Patient</h3>
+                                <p>Select the services provided to the patient. The smart contract will verify coverage and balance.</p>
+                                <div id="servicesCheckboxesProvider" class="checkbox-grid"></div>
+                                <button id="provideServicesButton">Submit Selected Services</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="pharmacySection">
+                        <div class="dashboard-grid">
+                            <div class="dashboard-card">
+                                <h3>Add a New Medicine</h3>
+                                <p>Add a medicine item to the platform master list.</p>
+
+                                <div class="field-group">
+                                    <label for="newMedicineName">Medicine Name</label>
+                                    <input type="text" id="newMedicineName" placeholder="Medicine Name (e.g., Aspirin 500mg)">
+                                </div>
+
+                                <div class="field-group">
+                                    <label for="newMedicineCost">Medicine Cost</label>
+                                    <input type="number" id="newMedicineCost" placeholder="Medicine Cost (e.g., 10)">
+                                </div>
+
+                                <button id="addMedicineButton">Add Medicine</button>
+                            </div>
+
+                            <div class="dashboard-card">
+                                <h3>Provide Medicines to Patient</h3>
+                                <p>Select the medicines provided to the patient. The smart contract will verify plan coverage.</p>
+                                <div id="medicinesCheckboxes" class="checkbox-grid"></div>
+                                <button id="provideMedicinesButton">Submit Medicines</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="footer-note">HealthChain public testnet prototype — Sepolia, Solidity, Truffle, Ethers.js, MetaMask, HTML, CSS, and JavaScript</p>
+            </section>
+        </div>
+    </main>
+
+    <div id="notification"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.1/ethers.umd.min.js" type="application/javascript"></script>
+    <script src="app.js"></script>
+    <script>
+        // Keep success/error messages visible for 10 seconds for blockchain transactions.
+        const HEALTHCHAIN_NOTIFICATION_DURATION = 10000;
+        let healthChainNotificationTimer;
+
+        window.showNotification = function(message, type = "success") {
+            const notificationBox = document.getElementById('notification');
+            notificationBox.textContent = message;
+            notificationBox.className = type;
+            notificationBox.classList.add('show');
+
+            clearTimeout(healthChainNotificationTimer);
+            healthChainNotificationTimer = setTimeout(() => {
+                notificationBox.classList.remove('show');
+            }, HEALTHCHAIN_NOTIFICATION_DURATION);
+        };
+    </script>
+</body>
+</html>
