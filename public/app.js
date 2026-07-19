@@ -715,6 +715,201 @@ async function getCurrentSignerAddress() {
     return await signer.getAddress();
 }
 
+
+// --- SYSTEM EVALUATION MEASUREMENT HELPERS ---
+// Stores real Sepolia transaction measurements locally in the browser.
+// No smart-contract logic is changed by these helpers.
+const EVALUATION_STORAGE_KEY = 'healthChainSepoliaEvaluationResults';
+
+function getEvaluationResults() {
+    try {
+        return JSON.parse(localStorage.getItem(EVALUATION_STORAGE_KEY) || '[]');
+    } catch (e) {
+        console.warn('Could not read saved evaluation results:', e);
+        return [];
+    }
+}
+
+function saveEvaluationResult(result) {
+    const results = getEvaluationResults();
+    const runNumber = results.filter(r => r.Function === result.Function).length + 1;
+    const savedResult = { Run: runNumber, ...result };
+    results.push(savedResult);
+    localStorage.setItem(EVALUATION_STORAGE_KEY, JSON.stringify(results));
+
+    console.log(`[Evaluation] ${result.Function} - Run ${runNumber}`);
+    console.table(savedResult);
+    console.log(`[Evaluation] Total saved transactions: ${results.length}`);
+
+    return savedResult;
+}
+
+async function buildEvaluationResult(functionName, tx, receipt, confirmationSeconds) {
+    const gasUsed = receipt?.gasUsed || ethers.constants.Zero;
+
+    // Ethers.js v5 normally exposes effectiveGasPrice on the receipt.
+    // Fall back to tx.gasPrice or the transaction fetched from the provider.
+    let effectiveGasPrice = receipt?.effectiveGasPrice || tx?.gasPrice || null;
+    if (!effectiveGasPrice && provider && tx?.hash) {
+        try {
+            const networkTx = await provider.getTransaction(tx.hash);
+            effectiveGasPrice = networkTx?.gasPrice || null;
+        } catch (e) {
+            console.warn('Could not fetch gas price for evaluation:', e);
+        }
+    }
+
+    const transactionFeeWei = effectiveGasPrice
+        ? gasUsed.mul(effectiveGasPrice)
+        : null;
+
+    let blockTimestampUTC = '';
+    if (provider && receipt?.blockNumber) {
+        try {
+            const block = await provider.getBlock(receipt.blockNumber);
+            if (block?.timestamp) {
+                blockTimestampUTC = new Date(block.timestamp * 1000).toISOString();
+            }
+        } catch (e) {
+            console.warn('Could not fetch block timestamp for evaluation:', e);
+        }
+    }
+
+    let walletAddress = '';
+    try {
+        walletAddress = await getCurrentSignerAddress() || '';
+    } catch (e) {
+        console.warn('Could not read signer address for evaluation:', e);
+    }
+
+    return {
+        Function: functionName,
+        TransactionHash: receipt?.transactionHash || tx?.hash || '',
+        BlockNumber: receipt?.blockNumber ?? '',
+        Status: Number(receipt?.status) === 1 ? 'Success' : 'Failed',
+        GasUsed: gasUsed.toString(),
+        EffectiveGasPriceGwei: effectiveGasPrice
+            ? ethers.utils.formatUnits(effectiveGasPrice, 'gwei')
+            : '',
+        TransactionFeeETH: transactionFeeWei
+            ? ethers.utils.formatEther(transactionFeeWei)
+            : '',
+        ConfirmationTimeSeconds: Number(confirmationSeconds).toFixed(2),
+        WalletAddress: walletAddress,
+        BlockTimestampUTC: blockTimestampUTC
+    };
+}
+
+/**
+ * Measures a submitted blockchain transaction from the moment Ethers.js
+ * returns the transaction response until the transaction receipt is confirmed.
+ *
+ * This intentionally excludes the time a user spends reviewing/confirming
+ * the MetaMask popup, so the recorded value reflects blockchain confirmation
+ * behavior rather than human interaction time.
+ */
+async function measureTransaction(functionName, tx) {
+    const confirmationStart = performance.now();
+
+    try {
+        const receipt = await tx.wait();
+        const confirmationSeconds = (performance.now() - confirmationStart) / 1000;
+
+        const result = await buildEvaluationResult(
+            functionName,
+            tx,
+            receipt,
+            confirmationSeconds
+        );
+        saveEvaluationResult(result);
+
+        return receipt;
+    } catch (error) {
+        const confirmationSeconds = (performance.now() - confirmationStart) / 1000;
+
+        // If the transaction was mined but reverted, Ethers.js v5 may attach
+        // the receipt to the thrown error. Record it as a failed on-chain tx.
+        if (error?.receipt) {
+            try {
+                const failedResult = await buildEvaluationResult(
+                    functionName,
+                    tx,
+                    error.receipt,
+                    confirmationSeconds
+                );
+                failedResult.Status = 'Failed';
+                saveEvaluationResult(failedResult);
+            } catch (recordError) {
+                console.error('Could not record failed evaluation transaction:', recordError);
+            }
+        }
+
+        throw error;
+    }
+}
+
+function showEvaluationResults() {
+    const results = getEvaluationResults();
+    console.table(results);
+    return results;
+}
+
+function clearEvaluationResults() {
+    localStorage.removeItem(EVALUATION_STORAGE_KEY);
+    console.log('[Evaluation] Saved evaluation results cleared.');
+}
+
+function downloadEvaluationCSV() {
+    const results = getEvaluationResults();
+
+    if (results.length === 0) {
+        console.warn('[Evaluation] No saved results to export.');
+        return;
+    }
+
+    const columns = [
+        'Run',
+        'Function',
+        'TransactionHash',
+        'BlockNumber',
+        'Status',
+        'GasUsed',
+        'EffectiveGasPriceGwei',
+        'TransactionFeeETH',
+        'ConfirmationTimeSeconds',
+        'WalletAddress',
+        'BlockTimestampUTC'
+    ];
+
+    const escapeCsv = (value) => {
+        const text = String(value ?? '');
+        return `"${text.replace(/"/g, '""')}"`;
+    };
+
+    const csvRows = [
+        columns.join(','),
+        ...results.map(row => columns.map(col => escapeCsv(row[col])).join(','))
+    ];
+
+    const blob = new Blob(['\uFEFF' + csvRows.join('\n')], {
+        type: 'text/csv;charset=utf-8;'
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'HealthChain_Sepolia_Evaluation_Results.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+// Make evaluation utilities easy to use from the browser console.
+window.showEvaluationResults = showEvaluationResults;
+window.downloadEvaluationCSV = downloadEvaluationCSV;
+window.clearEvaluationResults = clearEvaluationResults;
+
+
 async function login() {
     try {
         const address = await connectWallet();
@@ -750,7 +945,7 @@ async function register() {
     try {
         const address = await connectWallet();
         const tx = await contract.register(name, parseInt(role));
-        await tx.wait();
+        await measureTransaction("Actor Registration", tx);
 
         sessionStorage.setItem('userAddress', address);
         sessionStorage.setItem('userName', name);
@@ -1048,7 +1243,7 @@ async function enrollInPlan(planId) {
 
     try {
         const tx = await contract.enrollInPlan(planId);
-        await tx.wait();
+        await measureTransaction("Patient Enrollment", tx);
         showNotification("Successfully enrolled in the new plan!", "success");
         await loadPatientDashboard(); // Refresh the dashboard
     } catch(e) {
@@ -1073,7 +1268,7 @@ async function createPlan() {
     try {
         // **** Pass the new array as the last argument ****
         const tx = await contract.createPlan(planName, coverageLimit, selectedServices, excludedProviders);
-        await tx.wait();
+        await measureTransaction("Insurance Plan Creation", tx);
         showNotification("Plan created successfully!", "success");
         // ... (code to clear the form) ...
         document.querySelectorAll('input[name="excludeProvider"]:checked').forEach(cb => cb.checked = false); // Also clear exclusion checkboxes
@@ -1093,7 +1288,7 @@ async function provideService() {
     }
     try {
         const tx = await contract.provideService(patientAddress, serviceName);
-        await tx.wait();
+        await measureTransaction("Service Provision", tx);
         showNotification("Service processed successfully!", "success");
     } catch (e) {
         console.error(e);
@@ -1131,7 +1326,7 @@ async function provideServices() {
 
     try {
         const tx = await contract.provideServices(patientAddress, selectedServices);
-        await tx.wait();
+        await measureTransaction("Service Provision", tx);
     } catch (e) {
         console.error(e);
         const reason = e.reason || "Transaction failed. Check balance or console.";
@@ -1169,7 +1364,7 @@ async function provideMedicines() {
 
     try {
         const tx = await contract.provideMedicines(patientAddress, selectedMedicines);
-        await tx.wait();
+        await measureTransaction("Medicine Provision", tx);
     } catch (e) {
         console.error(e);
         const reason = e.reason || "Transaction failed. Check balance or console.";
